@@ -112,7 +112,7 @@ function StageEditor({ title, note, stage, registry, providers, value, onChange 
       <input
         className="text-input"
         type="password"
-        placeholder={hasEnvKey ? 'Using .env key — leave blank' : 'Enter API key'}
+        placeholder={hasEnvKey ? 'Server already has a key — leave blank' : 'Enter API key'}
         value={value.apiKey}
         onChange={(e) => set({ apiKey: e.target.value })}
       />
@@ -147,8 +147,8 @@ export default function Settings({ status, settings, onSave, onClose }) {
           </button>
         </div>
         <p className="modal-sub">
-          Use any provider per stage. Leave a key blank to use the one in your <code>.env</code>.
-          Perplexity + Claude are the defaults.
+          Use any provider per stage — Perplexity + Claude are the defaults. Paste your own API
+          key for the stage you want to run; it&apos;s stored in this browser only.
         </p>
 
         <div className="settings-grid">
@@ -173,8 +173,8 @@ export default function Settings({ status, settings, onSave, onClose }) {
         </div>
 
         <p className="settings-foot">
-          Keys typed here are stored in this browser and sent to your local backend. For hosted
-          or shared setups, put them in <code>.env</code> instead.
+          Your keys are stored in this browser and sent to the server only to make your calls —
+          never saved server-side or shared.
         </p>
 
         <div className="modal-actions">

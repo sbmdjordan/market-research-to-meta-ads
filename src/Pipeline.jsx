@@ -208,8 +208,7 @@ export default function Pipeline() {
             ⚙ LLMs
           </button>{' '}
           to begin — it&apos;s needed for the {notReady.join(' and ')} stage
-          {notReady.length > 1 ? 's' : ''}, and your key stays in your browser.{' '}
-          <span className="banner-muted">(Self-hosting? Set it in <code>.env</code> instead.)</span>
+          {notReady.length > 1 ? 's' : ''}. Your key is stored in your browser.
         </div>
       )}
 
