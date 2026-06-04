@@ -11,7 +11,7 @@ const EXAMPLES = [
 
 // Step 1 — the only thing the user types to start: what they sell + market.
 // Kicks off the slow, paid deep-research call, so we flag that plainly.
-export default function StepSetup({ initial, busy, onRun }) {
+export default function StepSetup({ initial, busy, onRun, onPreview }) {
   const [product, setProduct] = useState(initial.product || '')
   const [market, setMarket] = useState(initial.market || '')
   const [context, setContext] = useState(initial.context || '')
@@ -93,6 +93,12 @@ export default function StepSetup({ initial, busy, onRun }) {
         Real deep research across the live web — it usually takes several minutes (often
         5–10, sometimes longer), and uses paid API credits. Kick it off and let it run.
       </p>
+
+      {onPreview && (
+        <button className="btn-link preview-link" onClick={onPreview}>
+          Just want to see the ad templates? Preview them — no key needed →
+        </button>
+      )}
     </div>
   )
 }

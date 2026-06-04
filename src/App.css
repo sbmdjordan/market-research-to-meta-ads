@@ -58,6 +58,16 @@
   cursor: not-allowed;
 }
 
+/* ── Preview framing bar ── */
+.preview-bar {
+  padding: 12px 32px;
+  background: #fff7ed;
+  border-bottom: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* ── Layout ── */
 .workspace {
   display: flex;

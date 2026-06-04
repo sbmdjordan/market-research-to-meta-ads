@@ -604,6 +604,12 @@
   cursor: pointer;
   padding: 0;
 }
+.preview-link {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  text-align: center;
+}
 
 /* ── Evidence legend ── */
 .evidence-legend {

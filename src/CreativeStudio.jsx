@@ -60,7 +60,7 @@ const slugify = (s) =>
 
 // `incomingHeadlines` (from the pipeline) seed the studio; if absent we fall
 // back to the preset's placeholder lines so the studio still renders standalone.
-function CreativeStudio({ headlines: incomingHeadlines, onBack, settings }) {
+function CreativeStudio({ headlines: incomingHeadlines, onBack, settings, preview }) {
   const [presetId, setPresetId] = useState(PRESETS[0].id)
   const preset = getPreset(presetId)
 
@@ -252,10 +252,10 @@ function CreativeStudio({ headlines: incomingHeadlines, onBack, settings }) {
         <div className="header-left">
           {onBack && (
             <button className="btn-back" onClick={onBack}>
-              ← Headlines
+              ← {preview ? 'Back' : 'Headlines'}
             </button>
           )}
-          <h1>Creatives</h1>
+          <h1>{preview ? 'Template preview' : 'Creatives'}</h1>
           <span className="badge">
             {items.length} creative{items.length !== 1 ? 's' : ''}
           </span>
@@ -268,6 +268,14 @@ function CreativeStudio({ headlines: incomingHeadlines, onBack, settings }) {
           </button>
         )}
       </header>
+
+      {preview && (
+        <div className="preview-bar">
+          Template preview — sample messages to show the designs. The goal here is a fair{' '}
+          <strong>messaging</strong> test (one creative per message, designs varied so Meta
+          doesn&apos;t collapse them), not polished art — richer and video creative come later.
+        </div>
+      )}
 
       <div className="workspace">
         <aside className="sidebar">

@@ -13,6 +13,22 @@ import './Pipeline.css'
 
 const STEPS = ['Setup', 'Sources', 'Segments', 'Offer', 'Headlines', 'Creatives']
 
+// Varied sample messages for the no-key template preview — different angle
+// types (pain, desire, proof, question, contrarian, number) so the designs
+// show a real spread.
+const SAMPLE_HEADLINES = [
+  'Stop Guessing What Your Customers Want',
+  'Most Brands Test One Ad. Winners Test Twenty.',
+  'Your Best Customer Is Already Searching for This',
+  'Tired of Creative That Looks Good but Never Converts?',
+  'Real Research. Not Another Guess.',
+  'Test the Message Before You Spend the Budget',
+  'What If Your Ads Wrote Themselves?',
+  'The 3-Minute Fix for a Flatlining Campaign',
+  'Why Your Last Launch Fell Flat',
+  'One Product. Twelve Angles. Let the Data Pick.',
+]
+
 // Pre-fill an offer brief from the product + chosen segment. The user edits it;
 // it then feeds the angle and headline prompts verbatim.
 function draftBrief(product, segment) {
@@ -61,6 +77,8 @@ export default function Pipeline() {
   const [showSettings, setShowSettings] = useState(false)
   // Show the intro on first visit; reopenable via "How it works".
   const [intro, setIntro] = useState(() => !localStorage.getItem('pipeline-onboarded'))
+  // No-key template preview — jump straight to the creative studio with samples.
+  const [preview, setPreview] = useState(false)
 
   const startApp = () => {
     localStorage.setItem('pipeline-onboarded', '1')
@@ -175,6 +193,18 @@ export default function Pipeline() {
 
   // The creative studio is its own full-screen app; render it without the
   // wizard chrome once we hand off the final headline list.
+  // No-key preview: show the templates with sample headlines, no pipeline run.
+  if (preview) {
+    return (
+      <CreativeStudio
+        headlines={SAMPLE_HEADLINES}
+        settings={settings}
+        preview
+        onBack={() => setPreview(false)}
+      />
+    )
+  }
+
   if (step === 5) {
     const headlines = headlineItems.map((it) => it.headline.trim()).filter(Boolean)
     return <CreativeStudio headlines={headlines} settings={settings} onBack={() => setStep(4)} />
@@ -229,7 +259,14 @@ export default function Pipeline() {
           </div>
         )}
 
-        {step === 0 && <StepSetup initial={setup} busy={busy} onRun={onDiscoverSources} />}
+        {step === 0 && (
+          <StepSetup
+            initial={setup}
+            busy={busy}
+            onRun={onDiscoverSources}
+            onPreview={() => setPreview(true)}
+          />
+        )}
         {step === 1 && (
           <StepSources
             sources={sources}
