@@ -25,6 +25,42 @@
   letter-spacing: -0.3px;
 }
 
+/* ── Brand lockup (header) ── */
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.brand-word {
+  font-family: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.03em;
+  color: #001026;
+  white-space: nowrap;
+}
+.brand-word .works {
+  color: #16713a;
+}
+.brand-divider {
+  width: 1px;
+  height: 20px;
+  background: #d9d4c7;
+}
+.brand-product {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #717c86;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .brand-divider,
+  .brand-product {
+    display: none;
+  }
+}
+
 .header-right {
   display: flex;
   align-items: center;

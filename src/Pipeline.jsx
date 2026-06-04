@@ -3,6 +3,7 @@ import { getStatus, discoverSources, runResearch, runAngles, runHeadlines } from
 import { loadSettings, saveSettings, stageReady } from './settingsStore'
 import Settings from './Settings'
 import Tour from './Tour'
+import { LogoMark } from './Logo'
 import StepSetup from './steps/StepSetup'
 import StepSources from './steps/StepSources'
 import StepSegments from './steps/StepSegments'
@@ -219,7 +220,14 @@ export default function Pipeline() {
   return (
     <div className="pipeline">
       <header className="pipeline-header">
-        <h1>Market Research → Meta Ads</h1>
+        <div className="brand-lockup">
+          <LogoMark size={34} />
+          <span className="brand-word">
+            Efficiency <span className="works">Works</span>
+          </span>
+          <span className="brand-divider" />
+          <span className="brand-product">Ad Studio</span>
+        </div>
         <div className="header-right">
           <Stepper index={step} />
           <button className="btn-settings" onClick={() => setIntro(true)} title="What this tool does">
