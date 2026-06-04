@@ -1,0 +1,22 @@
+[
+  {
+    "id": "official-bold-gradient",
+    "name": "Bold Gradient",
+    "config": {
+      "background": { "type": "gradient", "fromKey": "navy", "toKey": "accentDark", "angle": 145 },
+      "headline": { "vertical": "center", "horizontal": "left", "align": "left", "colorKey": "white", "sizeScale": 1.1, "uppercase": false, "weight": 800, "maxWidthPct": 82 },
+      "accent": { "type": "bar-bottom", "colorKey": "accent" },
+      "brand": { "show": true, "vertical": "bottom", "horizontal": "left", "showUrl": false, "colorKey": "accent" }
+    }
+  },
+  {
+    "id": "official-clean-split",
+    "name": "Clean Split",
+    "config": {
+      "background": { "type": "split", "orientation": "vertical", "firstKey": "offWhite", "secondKey": "accent", "ratio": 0.62 },
+      "headline": { "vertical": "center", "horizontal": "left", "align": "left", "colorKey": "navy", "sizeScale": 1.0, "uppercase": false, "weight": 800, "maxWidthPct": 58 },
+      "accent": { "type": "none", "colorKey": "accent" },
+      "brand": { "show": true, "vertical": "bottom", "horizontal": "left", "showUrl": false, "colorKey": "navy" }
+    }
+  }
+]
