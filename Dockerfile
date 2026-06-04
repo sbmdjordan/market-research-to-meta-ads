@@ -5,9 +5,11 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# Install deps from the lockfile first (better layer caching).
+# Install deps first (better layer caching). Use `npm install` rather than
+# `npm ci` — the container's npm (10.x with Node 22) is stricter about the
+# lockfile than newer npm, and `npm install` reconciles instead of hard-failing.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 
 # Build the frontend.
 COPY . .
