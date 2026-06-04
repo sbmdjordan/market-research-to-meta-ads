@@ -203,12 +203,13 @@ export default function Pipeline() {
 
       {notReady.length > 0 && (
         <div className="banner banner-warn">
-          No API key for the {notReady.join(' and ')} stage
-          {notReady.length > 1 ? 's' : ''}. Add one in{' '}
+          Add your own API key in{' '}
           <button className="banner-link" onClick={() => setShowSettings(true)}>
-            LLM settings
+            ⚙ LLMs
           </button>{' '}
-          or your <code>.env</code>.
+          to begin — it&apos;s needed for the {notReady.join(' and ')} stage
+          {notReady.length > 1 ? 's' : ''}, and your key stays in your browser.{' '}
+          <span className="banner-muted">(Self-hosting? Set it in <code>.env</code> instead.)</span>
         </div>
       )}
 
