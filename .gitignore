@@ -17,6 +17,13 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local design-handoff snapshot (duplicated CSS for sharing with Claude Design)
+design-handoff/
+
+# Design redesign drop / temp extraction (the theme itself lives in src/)
+_design_unzip/
+*.zip
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
