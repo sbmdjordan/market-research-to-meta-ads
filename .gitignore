@@ -17,8 +17,9 @@ dist-ssr
 .env.*
 !.env.example
 
-# Local design-handoff snapshot (duplicated CSS for sharing with Claude Design)
+# Local design-handoff snapshots (files shared with Claude Design)
 design-handoff/
+template-handoff/
 
 # Design redesign drop / temp extraction (the theme itself lives in src/)
 _design_unzip/

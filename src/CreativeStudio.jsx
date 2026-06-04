@@ -10,6 +10,7 @@ import {
   curatedToEntries,
 } from './customTemplates'
 import { fetchCurated } from './curatedTemplates'
+import { PRESET_PALETTES } from './presetPalettes'
 import AddTemplate from './AddTemplate'
 import './App.css'
 
@@ -269,14 +270,6 @@ function CreativeStudio({ headlines: incomingHeadlines, onBack, settings, previe
         )}
       </header>
 
-      {preview && (
-        <div className="preview-bar">
-          Template preview — sample messages to show the designs. The goal here is a fair{' '}
-          <strong>messaging</strong> test (one creative per message, designs varied so Meta
-          doesn&apos;t collapse them), not polished art — richer and video creative come later.
-        </div>
-      )}
-
       <div className="workspace">
         <aside className="sidebar">
           <section className="sidebar-section">
@@ -300,7 +293,27 @@ function CreativeStudio({ headlines: incomingHeadlines, onBack, settings, previe
 
           <section className="sidebar-section">
             <h3>Brand colours</h3>
-            <p className="helper-text">Set your palette — used across every design.</p>
+            <p className="helper-text">Pick a preset or set your own — used across every design.</p>
+            <div className="palette-presets">
+              {PRESET_PALETTES.map((p) => {
+                const active = palette.navy === p.colors.navy && palette.accent === p.colors.accent
+                return (
+                  <button
+                    key={p.key}
+                    className={`palette-swatch ${active ? 'active' : ''}`}
+                    title={p.label}
+                    onClick={() => setPalette(p.colors)}
+                  >
+                    <span className="swatch-colors">
+                      <span style={{ background: p.colors.navy }} />
+                      <span style={{ background: p.colors.accent }} />
+                      <span style={{ background: p.colors.mint }} />
+                    </span>
+                    <span className="swatch-label">{p.label}</span>
+                  </button>
+                )
+              })}
+            </div>
             <div className="color-grid">
               {[
                 ['navy', 'BG dark'],

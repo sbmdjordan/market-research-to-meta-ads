@@ -58,16 +58,6 @@
   cursor: not-allowed;
 }
 
-/* ── Preview framing bar ── */
-.preview-bar {
-  padding: 12px 32px;
-  background: #fff7ed;
-  border-bottom: 1px solid #fed7aa;
-  color: #9a3412;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 /* ── Layout ── */
 .workspace {
   display: flex;
@@ -189,6 +179,44 @@
   font-size: 13px;
   color: #444;
   cursor: pointer;
+}
+
+/* Palette presets */
+.palette-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.palette-swatch {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px 9px 5px 5px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+}
+.palette-swatch:hover {
+  border-color: #bbb;
+}
+.palette-swatch.active {
+  border-color: #1f9d57;
+  box-shadow: 0 0 0 1px #1f9d57;
+}
+.swatch-colors {
+  display: inline-flex;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.swatch-colors span {
+  width: 12px;
+  height: 18px;
+  display: block;
 }
 
 /* Color controls */

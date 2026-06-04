@@ -9,6 +9,7 @@ import TopRule from './TopRule'
 import BigQuote from './BigQuote'
 import SplitPanel from './SplitPanel'
 import Minimal from './Minimal'
+import { NEW_TEMPLATES } from './NewTemplates'
 
 export const TEMPLATES = [
   { id: 'gradient-center', name: 'Gradient Center', Component: GradientCenter },
@@ -18,6 +19,8 @@ export const TEMPLATES = [
   { id: 'big-quote', name: 'Big Quote', Component: BigQuote },
   { id: 'split-panel', name: 'Split Panel', Component: SplitPanel },
   { id: 'minimal', name: 'Minimal', Component: Minimal },
+  // 20 new on-brand designs (key → id, label → name).
+  ...NEW_TEMPLATES.map((t) => ({ id: t.key, name: t.label, Component: t.Component })),
 ]
 
 export const getTemplate = (id) =>
