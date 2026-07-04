@@ -21,6 +21,33 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 app.use(express.json({ limit: '2mb' }))
 
+// CORS — let the Efficiency Works site (and local dev) call this API from a
+// different origin. Comma-separated allowlist in ALLOWED_ORIGINS.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, x-tool-password')
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
+
+// Password gate — protects the paid endpoints so a stranger who finds the URL
+// can't run up the API bill. Open when TOOL_PASSWORD is unset (local dev).
+const TOOL_PASSWORD = process.env.TOOL_PASSWORD || ''
+app.use('/api', (req, res, next) => {
+  if (!TOOL_PASSWORD) return next()
+  if (req.headers['x-tool-password'] === TOOL_PASSWORD) return next()
+  res.status(401).json({ error: 'Password required.' })
+})
+
 // Wrap an async handler so thrown errors become clean JSON with the right
 // status (a missing key is a 400 the UI can explain, not a 500).
 const handler = (fn) => async (req, res) => {
@@ -174,6 +201,10 @@ app.get(/^(?!\/api\/).*/, (req, res) => {
   res.sendFile(path.join(dist, 'index.html'))
 })
 
-app.listen(config.port, () => {
+const server = app.listen(config.port, () => {
   console.log(`Pipeline API on http://localhost:${config.port}`)
 })
+// Deep research can run several minutes (sometimes >5). Node's default 5-minute
+// requestTimeout would cut the longest runs off, so disable it. Render's own
+// ceiling (100 min) is the outer bound; headersTimeout still guards the header phase.
+server.requestTimeout = 0

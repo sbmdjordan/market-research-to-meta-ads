@@ -6,6 +6,44 @@ One cohesive, shareable tool: type a product → deep customer-segment research 
 > Stack: React + Vite frontend; thin Express backend holding the API keys; `html2canvas` for PNG export.
 > Folder name predates the rebrand to the full pipeline — repo name decided at GitHub push time.
 
+## Productization plan — public tool on efficiencyworks.io (decided 2026-07-03)
+
+**PHASE 1 BUILT 2026-07-03 — fold-in + gate; runs locally, NOT yet deployed.**
+- Frontend merged into the site: `pricing-landing-page/src/meta-ads/` (copied tree; the standalone `main.jsx`/`App.jsx`/`index.css` are left in place but unused), wrapped by `src/meta-ads/MetaAdsApp.jsx` (the `.meta-ads-app` scope), routed at `/meta-ads` in `src/App.jsx`, with a homepage Tools card in `src/pages/Umbrella.jsx`. Theme isolation was tiny: only `.btn-cta` collided with RentRange, plus 4 global selectors in `efficiency-e3.css` (`:root`/`body`/`#root`/`h1-3`) — all scoped to `.meta-ads-app`. Tool API base = `VITE_API_BASE` (`src/meta-ads/api.js` + password header); dev value in the site's `.env.development`; `html2canvas` added to site deps.
+- Backend (this repo) hardened in `server/index.js`: CORS (`ALLOWED_ORIGINS`), password gate (`TOOL_PASSWORD`, open when unset), and `server.requestTimeout = 0` (Node's 5-min default would clip long research). `render.yaml` added for an always-on Render deploy (free tier cold-starts; upgrade to starter to avoid).
+- Run locally: this repo `node server/index.js` (:8787) + site `npm run dev` (:5173) → http://localhost:5173/meta-ads. Needs keys via the tool's ⚙ Settings panel or this repo's `.env`.
+- Verified: site `npm run build` compiles the merge clean (69 modules); both servers boot; `/meta-ads` + `/api/status` return 200.
+- Still Phase 2/3 (NOT built): per-stage model split (Perplexity `sonar` discovery · Perplexity deep-research · GPT-4o structuring + angles · Claude headlines) + freemium metering + Stripe.
+- NEXT = deploy: push updated code (backend → `sbmdjordan/market-research-to-meta-ads`, site → `sbmdjordan/efficiency-works` — both repos already exist), Render Blueprint for the backend + set env vars, set `VITE_API_BASE` in Vercel to the Render URL, then push the site.
+
+
+Direction: fold this tool into the Efficiency Works site as a public, freemium SaaS at `efficiencyworks.io/meta-ads`, reached from a new "Tools" section on the homepage. It stops being a local-only clone-and-run tool. Site = the `pricing-landing-page` project (repo `sbmdjordan/efficiency-works`), a Vite/React SPA on Vercel.
+
+**Per-stage model stack (multi-vendor, decided 2026-07-03):**
+
+| # | Stage | Model |
+|---|---|---|
+| 1 | Source discovery | Perplexity `sonar` |
+| 2 | Research | Perplexity `sonar-deep-research` (drop to `sonar-pro` if cost needs cutting) |
+| 3 | Segment structuring | OpenAI GPT-4o |
+| 4 | Angles | OpenAI GPT-4o |
+| 5 | Headlines | Claude (Sonnet) |
+
+**Backend change this forces:** today only TWO provider slots exist (`research`, `writing`); stages 1/3/4/5 all share the `writing` slot (see `server/providers.js` STAGE_DEFAULTS + every endpoint calling `stage:'writing'`). To run this mixed stack, split the writing stage into per-stage provider overrides so each step can use a different vendor.
+
+**Cost per run:** ~$1.00 with deep-research (~$0.60 with sonar-pro). Perplexity deep-research reasoning tokens are the swing factor and unpredictable; budget up to ~$1.50 on deep topics. Research ≈ 60% of the run cost.
+
+**Freemium model (proposed 2026-07-03, pending final sign-off):**
+- Free: 1 run, EMAIL REQUIRED (abuse cap + doubles as lead capture; anonymous = uncapped cost).
+- Trial on signup: 3 runs to sample quality.
+- Starter £19/mo = 10 runs. Pro £49/mo = 30 runs. HARD CAP per tier so a user can't cost more than they pay. Margins ~55% at $1/run, ~85% on cheaper config.
+
+**Build implications:**
+- Frontend: copy tool `src/` into the site under `src/meta-ads/`, add `<Route path="/meta-ads">`, add `html2canvas` dep, add a Tools section to `src/pages/Umbrella.jsx` (cards: RentRange, Meta Ads Generator, Content Engine "coming soon").
+- Backend: do NOT port to Vercel serverless functions. Perplexity deep-research can run several minutes, sometimes >5 min (confirmed by Jordan's own use), which exceeds even Vercel Pro's 300s function ceiling. Instead deploy the existing Express server (`server/index.js`) as-is to an always-on host (Render/Railway), which has no per-request timeout, so deep research runs to completion exactly as it does on Jordan's laptop today. Less work than a functions port, and removes the timeout risk entirely instead of testing against it. Keep `server/llm/*`, `providers.js`, `prompts/*`, `util.js` unchanged.
+- Frontend still folds into the site: `/meta-ads` lives in the Vite app (Tools-section card on the homepage) and calls the Express backend on the always-on host (direct URL or a Vercel rewrite), so from the user's view it's all under efficiencyworks.io/meta-ads. Backend-host choice (Render vs Railway) + paid tier to avoid idle cold-starts: decide at build time. Pending Jordan's confirm.
+- Add auth + usage metering + Stripe tiers. Reuse RentRange's Stripe + Upstash KV plumbing (same repo).
+
 ## Run
 
 ```

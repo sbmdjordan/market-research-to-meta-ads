@@ -1,0 +1,29 @@
+# Render Blueprint — the Meta Ads tool backend (an always-on Express server, so
+# it has no per-request timeout and the multi-minute deep-research runs finish).
+# Deploy: push this repo to GitHub, then Render → New → Blueprint → pick this repo.
+# Set the secret env vars (sync: false) in the Render dashboard after it creates.
+#
+# Env vars to set:
+#   PERPLEXITY_API_KEY  - research + source discovery
+#   ANTHROPIC_API_KEY   - headlines (Claude)
+#   OPENAI_API_KEY      - structuring + angles (GPT), once the per-stage split lands
+#   TOOL_PASSWORD       - the shared password gating the paid endpoints
+#   ALLOWED_ORIGINS     - https://efficiencyworks.io (comma-separate more if needed)
+services:
+  - type: web
+    name: meta-ads-backend
+    runtime: node
+    plan: free   # upgrade to 'starter' (~$7/mo) to remove idle spin-down / cold starts
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: TOOL_PASSWORD
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
