@@ -74,8 +74,8 @@ app.post(
     if (!product?.trim()) throw badRequest('product is required')
 
     const { text } = await run({
-      stage: 'writing',
-      override: providers?.writing,
+      stage: 'discovery',
+      override: providers?.discovery,
       prompt: buildSourcesPrompt({ product, market, context }),
       maxTokens: 2000,
     })
@@ -85,8 +85,8 @@ app.post(
   })
 )
 
-// Stage 1 — research. The research provider (web-capable) mines customer voice;
-// the writing provider structures that prose into pickable segment cards.
+// Research + structure. The research provider (Perplexity, web-capable) mines
+// customer voice; the structure provider (GPT-4o) turns that prose into segment cards.
 app.post(
   '/api/research',
   handler(async (req, res) => {
@@ -99,8 +99,8 @@ app.post(
     if (!sources.length) {
       try {
         const { text: srcText } = await run({
-          stage: 'writing',
-          override: providers?.writing,
+          stage: 'discovery',
+          override: providers?.discovery,
           prompt: buildSourcesPrompt({ product, market, context }),
           maxTokens: 2000,
         })
@@ -123,8 +123,8 @@ app.post(
     // 3. Structure into segment cards. High cap so exhaustive extraction
     //    doesn't cut off mid-segment.
     const { text: structured } = await run({
-      stage: 'writing',
-      override: providers?.writing,
+      stage: 'structure',
+      override: providers?.structure,
       prompt: buildStructurePrompt(rawResearch),
       maxTokens: 16000,
     })
@@ -134,7 +134,7 @@ app.post(
   })
 )
 
-// Stage 2 — angles (writing provider).
+// Angles — creative divergence (OpenAI GPT-4o by default).
 app.post(
   '/api/angles',
   handler(async (req, res) => {
@@ -142,8 +142,8 @@ app.post(
     if (!segment || !offerBrief?.trim()) throw badRequest('segment and offerBrief are required')
 
     const { text } = await run({
-      stage: 'writing',
-      override: providers?.writing,
+      stage: 'angles',
+      override: providers?.angles,
       prompt: buildAnglesPrompt({ product, market, offerBrief, segment }),
       maxTokens: 12000,
     })
@@ -151,7 +151,7 @@ app.post(
   })
 )
 
-// Stage 3 — headlines (writing provider).
+// Headlines — on-brand ad copy (Claude by default).
 app.post(
   '/api/headlines',
   handler(async (req, res) => {
@@ -160,8 +160,8 @@ app.post(
       throw badRequest('offerBrief and a non-empty angles array are required')
 
     const { text } = await run({
-      stage: 'writing',
-      override: providers?.writing,
+      stage: 'headlines',
+      override: providers?.headlines,
       prompt: buildHeadlinesPrompt({ offerBrief, angles }),
       maxTokens: 12000,
     })

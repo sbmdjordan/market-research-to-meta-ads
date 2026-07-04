@@ -74,10 +74,33 @@ export const PROVIDERS = {
 // Stage defaults — overridable in .env so a clone can ship with different
 // defaults without code changes.
 const STAGE_DEFAULTS = {
+  // Source discovery — name the real places buyers talk. Web-grounded
+  // (Perplexity sonar) so the sources actually exist.
+  discovery: {
+    provider: process.env.DISCOVERY_PROVIDER || 'perplexity',
+    model: process.env.DISCOVERY_MODEL || 'sonar',
+  },
+  // Deep web research — mines those sources for customer voice.
   research: {
     provider: process.env.RESEARCH_PROVIDER || 'perplexity',
-    model: process.env.RESEARCH_MODEL || '',
+    model: process.env.RESEARCH_MODEL || '', // '' -> provider default (sonar-deep-research)
   },
+  // Structure research prose into clean segment cards. Pure extraction — GPT-4o.
+  structure: {
+    provider: process.env.STRUCTURE_PROVIDER || 'openai',
+    model: process.env.STRUCTURE_MODEL || '',
+  },
+  // Angles — creative divergence. GPT-4o.
+  angles: {
+    provider: process.env.ANGLES_PROVIDER || 'openai',
+    model: process.env.ANGLES_MODEL || '',
+  },
+  // Headlines — on-brand ad copy. Claude.
+  headlines: {
+    provider: process.env.HEADLINES_PROVIDER || 'anthropic',
+    model: process.env.HEADLINES_MODEL || '',
+  },
+  // Vision / misc fallback (e.g. build a template from a reference ad image).
   writing: {
     provider: process.env.WRITING_PROVIDER || 'anthropic',
     model: process.env.WRITING_MODEL || '',
@@ -116,7 +139,7 @@ export function resolveStage(stage, override = {}) {
   // rewrites the model (native search via the normal chat call); for anthropic
   // it sets a flag the transport uses to pass the web-search tool.
   let webSearch = false
-  if (stage === 'research' && p.webSearch) {
+  if ((stage === 'research' || stage === 'discovery') && p.webSearch) {
     const ws = p.webSearch
     webSearch = true
     if (ws.mode === 'model' && !explicitModel && ws.searchModel) {

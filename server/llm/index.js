@@ -8,6 +8,7 @@ import { callAnthropic } from './anthropic.js'
 
 export async function run({ stage, override, system, prompt, maxTokens, image }) {
   const cfg = resolveStage(stage, override)
+  console.log(`[stage:${stage}] ${cfg.providerId}/${cfg.model}${cfg.webSearch ? ' +web' : ''}`)
   const transport = cfg.type === 'anthropic' ? callAnthropic : callOpenAICompatible
   return transport({
     baseURL: cfg.baseURL,
