@@ -16,6 +16,7 @@ import { buildAnglesPrompt } from './prompts/angles.js'
 import { buildHeadlinesPrompt } from './prompts/headlines.js'
 import { buildTemplateFromAdPrompt } from './prompts/templateFromAd.js'
 import { extractJson } from './util.js'
+import { captureLead, freeRunUsed, claimFreeRun } from './kv.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -33,19 +34,34 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'content-type, x-tool-password')
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, x-tool-password, x-user-email')
   }
   if (req.method === 'OPTIONS') return res.sendStatus(204)
   next()
 })
 
-// Password gate — protects the paid endpoints so a stranger who finds the URL
-// can't run up the API bill. Open when TOOL_PASSWORD is unset (local dev).
+// Auth + plan. Owner (TOOL_PASSWORD) = deep-research, unlimited (that's you).
+// Free (a valid email header) = sonar-pro, one run per email. /api/free-run and
+// /api/status stay open (that's how a visitor gets in). No password set (local
+// dev) = treat everyone as owner.
 const TOOL_PASSWORD = process.env.TOOL_PASSWORD || ''
 app.use('/api', (req, res, next) => {
-  if (!TOOL_PASSWORD) return next()
-  if (req.headers['x-tool-password'] === TOOL_PASSWORD) return next()
-  res.status(401).json({ error: 'Password required.' })
+  if (req.path === '/free-run' || req.path === '/status') return next()
+  if (TOOL_PASSWORD && req.headers['x-tool-password'] === TOOL_PASSWORD) {
+    req.plan = 'owner'
+    return next()
+  }
+  const email = String(req.headers['x-user-email'] || '').trim().toLowerCase()
+  if (email && /.+@.+\..+/.test(email)) {
+    req.plan = 'free'
+    req.email = email
+    return next()
+  }
+  if (!TOOL_PASSWORD) {
+    req.plan = 'owner'
+    return next()
+  }
+  res.status(401).json({ error: 'Sign up for a free run to continue.' })
 })
 
 // Wrap an async handler so thrown errors become clean JSON with the right
@@ -64,6 +80,19 @@ const badRequest = (msg) => {
   e.status = 400
   return e
 }
+
+// Free-run grant. The landing page posts an email here to start a free run:
+// records the lead and reports whether this email has already used its one run.
+// The real one-per-email enforcement is atomic at the research step (claimFreeRun).
+app.post(
+  '/api/free-run',
+  handler(async (req, res) => {
+    const email = String(req.body?.email || '').trim().toLowerCase()
+    if (!/.+@.+\..+/.test(email)) throw badRequest('A valid email is required.')
+    await captureLead(email, { source: 'landing' })
+    res.json({ ok: true, email, freeRunUsed: await freeRunUsed(email) })
+  })
+)
 
 // Stage 0 — source discovery. The separate "find me the sources" step, so the
 // user can review/edit the sources before the slow, paid deep-research call.
@@ -111,11 +140,22 @@ app.post(
       }
     }
 
-    // 2. Deep research, mining those sources. High cap so the report isn't
-    //    truncated before it covers every segment.
+    // 2. Deep research. Free plan runs on cheap sonar-pro and claims its single
+    //    run per email here (atomic — can't be farmed). Owner/paid get the
+    //    deep-research default.
+    let researchOverride = providers?.research
+    if (req.plan === 'free') {
+      const claimed = await claimFreeRun(req.email)
+      if (!claimed) {
+        const e = new Error('You have already used your free run. Subscribe to keep going.')
+        e.status = 402
+        throw e
+      }
+      researchOverride = { provider: 'perplexity', model: 'sonar-pro' }
+    }
     const { text: rawResearch, citations } = await run({
       stage: 'research',
-      override: providers?.research,
+      override: researchOverride,
       prompt: buildResearchPrompt({ product, market, context, sources }),
       maxTokens: 16000,
     })
