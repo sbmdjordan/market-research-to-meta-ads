@@ -16,7 +16,7 @@ import { buildAnglesPrompt } from './prompts/angles.js'
 import { buildHeadlinesPrompt } from './prompts/headlines.js'
 import { buildTemplateFromAdPrompt } from './prompts/templateFromAd.js'
 import { extractJson } from './util.js'
-import { captureLead, freeRunUsed, claimFreeRun } from './kv.js'
+import { captureLead, freeRunUsed, claimFreeRun, getSubscription, getUsage, consumeQuota } from './kv.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -41,27 +41,39 @@ app.use((req, res, next) => {
 })
 
 // Auth + plan. Owner (TOOL_PASSWORD) = deep-research, unlimited (that's you).
-// Free (a valid email header) = sonar-pro, one run per email. /api/free-run and
-// /api/status stay open (that's how a visitor gets in). No password set (local
-// dev) = treat everyone as owner.
+// Paid (a valid email header with an active subscription) = deep-research,
+// monthly quota (10/30). Free (any other valid email) = sonar-pro, one run
+// ever. /api/free-run and /api/status stay open (that's how a visitor gets
+// in). No password set (local dev) = treat everyone as owner.
 const TOOL_PASSWORD = process.env.TOOL_PASSWORD || ''
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
   if (req.path === '/free-run' || req.path === '/status') return next()
   if (TOOL_PASSWORD && req.headers['x-tool-password'] === TOOL_PASSWORD) {
     req.plan = 'owner'
     return next()
   }
   const email = String(req.headers['x-user-email'] || '').trim().toLowerCase()
-  if (email && /.+@.+\..+/.test(email)) {
-    req.plan = 'free'
-    req.email = email
-    return next()
+  if (!email || !/.+@.+\..+/.test(email)) {
+    if (!TOOL_PASSWORD) {
+      req.plan = 'owner'
+      return next()
+    }
+    return res.status(401).json({ error: 'Sign up for a free run to continue.' })
   }
-  if (!TOOL_PASSWORD) {
-    req.plan = 'owner'
-    return next()
+  req.email = email
+  try {
+    const sub = await getSubscription(email)
+    if (sub) {
+      req.plan = 'paid'
+      req.subPlan = sub.plan // 'starter' | 'pro'
+    } else {
+      req.plan = 'free'
+    }
+  } catch (err) {
+    console.error('[gate] subscription lookup failed:', err.message)
+    req.plan = 'free' // fail closed to the cheaper tier, never silently grant paid
   }
-  res.status(401).json({ error: 'Sign up for a free run to continue.' })
+  next()
 })
 
 // Wrap an async handler so thrown errors become clean JSON with the right
@@ -140,11 +152,23 @@ app.post(
       }
     }
 
-    // 2. Deep research. Free plan runs on cheap sonar-pro and claims its single
-    //    run per email here (atomic — can't be farmed). Owner/paid get the
-    //    deep-research default.
+    // 2. Deep research. Owner = unlimited deep-research. Paid = deep-research,
+    //    metered against the monthly plan quota (atomic INCR — can't be
+    //    double-spent by concurrent requests). Free = cheap sonar-pro, one run
+    //    ever per email (atomic claim — can't be farmed).
     let researchOverride = providers?.research
-    if (req.plan === 'free') {
+    if (req.plan === 'paid') {
+      const { allowed, used, limit } = await consumeQuota(req.email, req.subPlan)
+      if (!allowed) {
+        const e = new Error(
+          `You've used all ${limit} runs on your ${req.subPlan} plan this month. ` +
+            `It resets on the 1st, or upgrade for more runs.`
+        )
+        e.status = 402
+        throw e
+      }
+      void used // available if we want to surface "x of y used" client-side later
+    } else if (req.plan === 'free') {
       const claimed = await claimFreeRun(req.email)
       if (!claimed) {
         const e = new Error('You have already used your free run. Subscribe to keep going.')
@@ -230,9 +254,28 @@ app.post(
 
 // Config snapshot — the UI uses this to render Settings + a readiness banner.
 // Returns which providers have an env key (booleans only, never the values).
-app.get('/api/status', (req, res) => {
-  res.json(statusSnapshot())
-})
+app.get(
+  '/api/status',
+  handler(async (req, res) => {
+    const base = statusSnapshot()
+    const email = String(req.headers['x-user-email'] || '').trim().toLowerCase()
+
+    let account = { plan: 'anonymous' }
+    if (TOOL_PASSWORD && req.headers['x-tool-password'] === TOOL_PASSWORD) {
+      account = { plan: 'owner' }
+    } else if (email && /.+@.+\..+/.test(email)) {
+      const sub = await getSubscription(email)
+      if (sub) {
+        const usage = await getUsage(email, sub.plan)
+        account = { plan: 'paid', subPlan: sub.plan, used: usage.used, limit: usage.limit }
+      } else {
+        account = { plan: 'free', freeRunUsed: await freeRunUsed(email) }
+      }
+    }
+
+    res.json({ ...base, account })
+  })
+)
 
 // In production, serve the built frontend from the same process.
 const dist = path.join(__dirname, '..', 'dist')
