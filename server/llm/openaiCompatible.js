@@ -5,7 +5,7 @@
 
 import { fetch, longCallAgent } from './http.js'
 
-export async function callOpenAICompatible({ baseURL, apiKey, model, system, prompt, maxTokens = 8000, image }) {
+export async function callOpenAICompatible({ baseURL, apiKey, model, system, prompt, maxTokens = 8000, image, responseFormat }) {
   const messages = []
   if (system) messages.push({ role: 'system', content: system })
   // With an image (a data URL), use the multimodal content array shape.
@@ -27,7 +27,12 @@ export async function callOpenAICompatible({ baseURL, apiKey, model, system, pro
       Authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: maxTokens,
+      ...(responseFormat ? { response_format: responseFormat } : {}),
+    }),
     dispatcher: longCallAgent,
   })
 

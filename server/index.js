@@ -112,60 +112,81 @@ app.post(
 // anything that empties out.
 const cleanSource = (s) =>
   String(s)
-    .replace(/\[\d+\]/g, '')
+    .replace(/\[\d+\]/g, '') // Perplexity inline citation markers
+    .replace(/^[\s"'[\]]+/, '') // stray leading brackets/quotes sonar sometimes emits
     .replace(/\s{2,}/g, ' ')
     .trim()
 
-// sonar formats the array inconsistently: usually a clean array, but sometimes
-// a JSON-STRINGIFIED array ("[\"...\"]") and sometimes prose with no array at
-// all. Parse tolerantly — unwrapping a double-encoded string — and return a
-// clean string[], or null so the caller can retry.
+// Perplexity's structured output returns `{ "sources": [ ... ] }`. Pull the
+// array out tolerantly: accept a bare array, an object with a `sources` array,
+// or a double-encoded JSON string of either. Returns a clean string[] or null.
 function parseSourceArray(text) {
-  const toArray = (v) => {
+  const pickArray = (v) =>
+    Array.isArray(v) ? v : v && typeof v === 'object' && Array.isArray(v.sources) ? v.sources : null
+  const decode = (v) => {
     try {
       let p = typeof v === 'string' ? JSON.parse(v) : v
-      if (typeof p === 'string') p = JSON.parse(p) // double-encoded array
-      return Array.isArray(p) ? p : null
+      if (typeof p === 'string') p = JSON.parse(p) // double-encoded
+      return p
     } catch {
       return null
     }
   }
-  // First the tolerant extractor (handles fences / stray prose around an array).
-  let arr = null
+  let val = null
   try {
     let p = extractJson(text)
     if (typeof p === 'string') p = JSON.parse(p)
-    if (Array.isArray(p)) arr = p
+    val = p
   } catch {
     /* fall through */
   }
-  // Then the whole response as JSON (handles the double-stringified case).
-  if (!arr) arr = toArray(String(text).trim())
+  let arr = pickArray(val)
+  if (!arr) arr = pickArray(decode(String(text).trim()))
   if (!arr) return null
-  const out = arr.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
+  const out = arr
+    .filter((s) => typeof s === 'string')
+    .map(cleanSource)
+    .filter((s) => s.length >= 4) // drop empties + stray-char junk
   return out.length ? out : null
 }
 
-// Discover sources with a few retries — sonar returns malformed or missing JSON
-// on roughly half of calls, and the call is cheap + fast (~4s), so retrying is
-// the most reliable path to a usable list. Returns [] only if every attempt
-// fails (research then falls back to self-selecting its own sources).
+// Force sonar to emit valid JSON via structured output — without it, sonar
+// returns malformed/no JSON on ~half of calls. Schema shape Perplexity expects.
+const SOURCES_RESPONSE_FORMAT = {
+  type: 'json_schema',
+  json_schema: {
+    schema: {
+      type: 'object',
+      properties: { sources: { type: 'array', items: { type: 'string' } } },
+      required: ['sources'],
+    },
+  },
+}
+
+// Discover sources in ONE fast call (structured output makes the JSON reliable,
+// ~5s). Keep the best of up to 3 attempts only to guard the rare degenerate run
+// that returns 0-2 junk entries; return early as soon as we have a usable list,
+// so the common case is a single call. Returns [] only if every attempt fails
+// (research then self-selects sources).
 async function discoverSources({ product, market, context, providers }) {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  let best = []
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const { text } = await run({
         stage: 'discovery',
         override: providers?.discovery,
         prompt: buildSourcesPrompt({ product, market, context }),
         maxTokens: 2000,
+        responseFormat: SOURCES_RESPONSE_FORMAT,
       })
-      const sources = parseSourceArray(text)
-      if (sources?.length) return sources
+      const sources = parseSourceArray(text) || []
+      if (sources.length > best.length) best = sources
+      if (best.length >= 3) return best // good enough — don't pay for a 2nd call
     } catch {
-      /* transport/parse hiccup — try again */
+      /* provider hiccup — one more try */
     }
   }
-  return []
+  return best
 }
 
 // Stage 0 — source discovery. The separate "find me the sources" step, so the

@@ -6,7 +6,7 @@ import { resolveStage } from '../providers.js'
 import { callOpenAICompatible } from './openaiCompatible.js'
 import { callAnthropic } from './anthropic.js'
 
-export async function run({ stage, override, system, prompt, maxTokens, image }) {
+export async function run({ stage, override, system, prompt, maxTokens, image, responseFormat }) {
   const cfg = resolveStage(stage, override)
   console.log(`[stage:${stage}] ${cfg.providerId}/${cfg.model}${cfg.webSearch ? ' +web' : ''}`)
   const transport = cfg.type === 'anthropic' ? callAnthropic : callOpenAICompatible
@@ -22,5 +22,8 @@ export async function run({ stage, override, system, prompt, maxTokens, image })
     webSearch: cfg.webSearch,
     // A data URL — triggers the multimodal request shape (vision).
     image,
+    // Structured-output schema (OpenAI-compatible providers only; discovery uses
+    // it to force valid JSON). Anthropic's caller ignores it.
+    responseFormat,
   })
 }
