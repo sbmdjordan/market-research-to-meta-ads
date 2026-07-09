@@ -116,6 +116,58 @@ const cleanSource = (s) =>
     .replace(/\s{2,}/g, ' ')
     .trim()
 
+// sonar formats the array inconsistently: usually a clean array, but sometimes
+// a JSON-STRINGIFIED array ("[\"...\"]") and sometimes prose with no array at
+// all. Parse tolerantly — unwrapping a double-encoded string — and return a
+// clean string[], or null so the caller can retry.
+function parseSourceArray(text) {
+  const toArray = (v) => {
+    try {
+      let p = typeof v === 'string' ? JSON.parse(v) : v
+      if (typeof p === 'string') p = JSON.parse(p) // double-encoded array
+      return Array.isArray(p) ? p : null
+    } catch {
+      return null
+    }
+  }
+  // First the tolerant extractor (handles fences / stray prose around an array).
+  let arr = null
+  try {
+    let p = extractJson(text)
+    if (typeof p === 'string') p = JSON.parse(p)
+    if (Array.isArray(p)) arr = p
+  } catch {
+    /* fall through */
+  }
+  // Then the whole response as JSON (handles the double-stringified case).
+  if (!arr) arr = toArray(String(text).trim())
+  if (!arr) return null
+  const out = arr.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
+  return out.length ? out : null
+}
+
+// Discover sources with a few retries — sonar returns malformed or missing JSON
+// on roughly half of calls, and the call is cheap + fast (~4s), so retrying is
+// the most reliable path to a usable list. Returns [] only if every attempt
+// fails (research then falls back to self-selecting its own sources).
+async function discoverSources({ product, market, context, providers }) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const { text } = await run({
+        stage: 'discovery',
+        override: providers?.discovery,
+        prompt: buildSourcesPrompt({ product, market, context }),
+        maxTokens: 2000,
+      })
+      const sources = parseSourceArray(text)
+      if (sources?.length) return sources
+    } catch {
+      /* transport/parse hiccup — try again */
+    }
+  }
+  return []
+}
+
 // Stage 0 — source discovery. The separate "find me the sources" step, so the
 // user can review/edit the sources before the slow, paid deep-research call.
 app.post(
@@ -124,16 +176,7 @@ app.post(
     const { product, market, context, providers } = req.body || {}
     if (!product?.trim()) throw badRequest('product is required')
 
-    const { text } = await run({
-      stage: 'discovery',
-      override: providers?.discovery,
-      prompt: buildSourcesPrompt({ product, market, context }),
-      maxTokens: 2000,
-    })
-    const parsed = extractJson(text)
-    const sources = Array.isArray(parsed)
-      ? parsed.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
-      : []
+    const sources = await discoverSources({ product, market, context, providers })
     res.json({ sources })
   })
 )
@@ -147,22 +190,13 @@ app.post(
     if (!product?.trim()) throw badRequest('product is required')
 
     // Use the sources the user approved (from /api/sources). If none were
-    // passed, discover here as a fallback (non-fatal).
-    let sources = Array.isArray(approved) ? approved.filter((s) => typeof s === 'string') : []
+    // passed, discover here as a fallback (non-fatal — empty is fine, research
+    // then self-selects its own sources).
+    let sources = Array.isArray(approved)
+      ? approved.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
+      : []
     if (!sources.length) {
-      try {
-        const { text: srcText } = await run({
-          stage: 'discovery',
-          override: providers?.discovery,
-          prompt: buildSourcesPrompt({ product, market, context }),
-          maxTokens: 2000,
-        })
-        const parsed = extractJson(srcText)
-        if (Array.isArray(parsed))
-          sources = parsed.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
-      } catch {
-        sources = [] // research falls back to self-selecting sources
-      }
+      sources = await discoverSources({ product, market, context, providers })
     }
 
     // 2. Deep research. Owner = unlimited deep-research. Paid = deep-research,

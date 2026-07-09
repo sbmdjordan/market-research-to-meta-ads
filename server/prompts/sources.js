@@ -41,6 +41,6 @@ Thin-data decomposition (for novel or hyper-local concepts): if the literal prod
 
 Each entry = one concrete source: the platform plus the specific named venues, plus a short clause on WHAT to mine there. Group related venues of the same platform into one entry (e.g. the relevant subreddits together). Be concrete: "r/SaaS, r/startups, r/Entrepreneur — threads on marketing stack setup, first marketing hire, founder-led GTM pain" beats "Reddit".
 
-Return ONLY a JSON array of short strings, one source per entry. No fixed count. No prose, no markdown, no code fences.
+Return ONLY a raw JSON array of short strings, one source per entry. The output must start with [ and end with ] — do NOT wrap the array in quotes, do NOT escape the inner quotes, do NOT double-encode it as a string. No fixed count. No prose, no markdown, no code fences.
 `.trim()
 }

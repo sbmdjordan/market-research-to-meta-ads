@@ -3,6 +3,8 @@
 // that speaks POST {baseURL}/chat/completions. Returns text + any citations
 // the provider attaches (Perplexity does; most don't).
 
+import { fetch, longCallAgent } from './http.js'
+
 export async function callOpenAICompatible({ baseURL, apiKey, model, system, prompt, maxTokens = 8000, image }) {
   const messages = []
   if (system) messages.push({ role: 'system', content: system })
@@ -26,6 +28,7 @@ export async function callOpenAICompatible({ baseURL, apiKey, model, system, pro
       'content-type': 'application/json',
     },
     body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
+    dispatcher: longCallAgent,
   })
 
   if (!res.ok) {

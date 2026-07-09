@@ -6,6 +6,8 @@
 // web-search tool. Claude runs the searches itself and returns final text with
 // citations embedded — no tool round-trip on our side.
 
+import { fetch, longCallAgent } from './http.js'
+
 export async function callAnthropic({ baseURL, apiKey, model, system, prompt, maxTokens = 8000, webSearch, image }) {
   // With an image (a data URL "data:<mime>;base64,<data>"), send an image block.
   let content = prompt
@@ -37,6 +39,7 @@ export async function callAnthropic({ baseURL, apiKey, model, system, prompt, ma
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
+    dispatcher: longCallAgent,
   })
 
   if (!res.ok) {
