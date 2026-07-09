@@ -12,6 +12,7 @@ import {
 import { fetchCurated } from './curatedTemplates'
 import { PRESET_PALETTES } from './presetPalettes'
 import AddTemplate from './AddTemplate'
+import { Stepper } from './Stepper'
 import './App.css'
 
 // Accept a clean headline-per-line list (what the pipeline emits, or a paste).
@@ -61,7 +62,15 @@ const slugify = (s) =>
 
 // `incomingHeadlines` (from the pipeline) seed the studio; if absent we fall
 // back to the preset's placeholder lines so the studio still renders standalone.
-function CreativeStudio({ headlines: incomingHeadlines, onBack, settings, preview }) {
+function CreativeStudio({
+  headlines: incomingHeadlines,
+  onBack,
+  settings,
+  preview,
+  step,
+  maxStep,
+  onStepClick,
+}) {
   const [presetId, setPresetId] = useState(PRESETS[0].id)
   const preset = getPreset(presetId)
 
@@ -261,6 +270,9 @@ function CreativeStudio({ headlines: incomingHeadlines, onBack, settings, previe
             {items.length} creative{items.length !== 1 ? 's' : ''}
           </span>
         </div>
+        {!preview && onStepClick && (
+          <Stepper index={step} maxStep={maxStep} onClick={onStepClick} />
+        )}
         {items.length > 0 && (
           <button className="btn-export-all" onClick={exportAll} disabled={exporting}>
             {exporting

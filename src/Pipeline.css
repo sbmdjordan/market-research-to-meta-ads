@@ -134,6 +134,21 @@
   color: #6b7280;
 }
 
+.stepper-item.clickable {
+  cursor: pointer;
+}
+.stepper-item.clickable:hover {
+  color: #4a6cf7;
+}
+.stepper-item.clickable:hover .stepper-dot {
+  background: #d8e0fe;
+  color: #4a6cf7;
+}
+.stepper-item.current.clickable:hover .stepper-dot {
+  background: #4a6cf7;
+  color: #fff;
+}
+
 /* ── Banners ── */
 .banner {
   margin: 14px 32px 0;

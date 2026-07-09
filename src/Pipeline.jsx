@@ -4,6 +4,7 @@ import { loadSettings, saveSettings, stageReady } from './settingsStore'
 import Settings from './Settings'
 import Tour from './Tour'
 import { LogoMark } from './Logo'
+import { Stepper } from './Stepper'
 import StepSetup from './steps/StepSetup'
 import StepSources from './steps/StepSources'
 import StepSegments from './steps/StepSegments'
@@ -11,8 +12,6 @@ import StepBrief from './steps/StepBrief'
 import StepHeadlines from './steps/StepHeadlines'
 import CreativeStudio from './CreativeStudio'
 import './Pipeline.css'
-
-const STEPS = ['Setup', 'Sources', 'Segments', 'Offer', 'Headlines', 'Creatives']
 
 // Varied sample messages for the no-key template preview — different angle
 // types (pain, desire, proof, question, contrarian, number) so the designs
@@ -41,27 +40,14 @@ function draftBrief(product, segment) {
   ].join('\n')
 }
 
-function Stepper({ index }) {
-  return (
-    <ol className="stepper">
-      {STEPS.map((label, i) => (
-        <li
-          key={label}
-          data-tour={`stepper-${i}`}
-          className={`stepper-item ${i === index ? 'current' : ''} ${
-            i < index ? 'done' : ''
-          }`}
-        >
-          <span className="stepper-dot">{i < index ? '✓' : i + 1}</span>
-          <span className="stepper-label">{label}</span>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
 export default function Pipeline() {
   const [step, setStep] = useState(0)
+  // Furthest step whose data actually exists — tabs up to here are clickable.
+  const [maxStep, setMaxStep] = useState(0)
+  const advance = (n) => {
+    setStep(n)
+    setMaxStep((m) => Math.max(m, n))
+  }
   const [setup, setSetup] = useState({ product: '', market: '', context: '' })
   const [sources, setSources] = useState([])
   const [research, setResearch] = useState(null)
@@ -113,7 +99,7 @@ export default function Pipeline() {
     try {
       const { sources: found } = await discoverSources({ ...input, providers: settings })
       setSources(found || [])
-      setStep(1)
+      advance(1)
     } catch (e) {
       fail(e)
     } finally {
@@ -135,7 +121,7 @@ export default function Pipeline() {
       if (!data.segments?.length)
         throw new Error('No segments came back. Try a more specific product description.')
       setResearch(data)
-      setStep(2)
+      advance(2)
     } catch (e) {
       fail(e)
     } finally {
@@ -148,7 +134,7 @@ export default function Pipeline() {
     setSegment(seg)
     setBrief(draftBrief(setup.product, seg))
     setError('')
-    setStep(3)
+    advance(3)
   }
 
   const onGenerate = async (briefText) => {
@@ -176,7 +162,7 @@ export default function Pipeline() {
       setHeadlineItems(
         (headlines || []).map((h) => ({ headline: h.headline || '', angle: h.angle || '' }))
       )
-      setStep(4)
+      advance(4)
     } catch (e) {
       fail(e)
     } finally {
@@ -208,7 +194,16 @@ export default function Pipeline() {
 
   if (step === 5) {
     const headlines = headlineItems.map((it) => it.headline.trim()).filter(Boolean)
-    return <CreativeStudio headlines={headlines} settings={settings} onBack={() => setStep(4)} />
+    return (
+      <CreativeStudio
+        headlines={headlines}
+        settings={settings}
+        onBack={() => setStep(4)}
+        step={step}
+        maxStep={maxStep}
+        onStepClick={setStep}
+      />
+    )
   }
 
   // Which stages can't run with the current provider/key setup.
@@ -229,7 +224,7 @@ export default function Pipeline() {
           <span className="brand-product">Ad Studio</span>
         </div>
         <div className="header-right">
-          <Stepper index={step} />
+          <Stepper index={step} maxStep={maxStep} onClick={setStep} />
           <button className="btn-settings" onClick={() => setIntro(true)} title="What this tool does">
             How it works
           </button>
@@ -301,7 +296,7 @@ export default function Pipeline() {
             onEdit={editHeadline}
             onRemove={removeHeadline}
             onAdd={addHeadline}
-            onContinue={() => setStep(5)}
+            onContinue={() => advance(5)}
             onBack={() => setStep(3)}
           />
         )}
