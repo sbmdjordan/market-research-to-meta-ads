@@ -60,6 +60,21 @@ const slugify = (s) =>
     .replace(/\s+/g, '-')
     .toLowerCase()
 
+// The user's brand (wordmark + URL) is edited live in the studio sidebar.
+// Persist it so it survives leaving/returning to the Creatives tab (the studio
+// unmounts on nav) and page refreshes. Kept in its OWN key, separate from the
+// per-run pipeline state — a brand doesn't change per product, so "Start over"
+// leaves it intact.
+const BRAND_KEY = 'meta-ads-brand'
+const loadBrand = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(BRAND_KEY))
+    return v && typeof v === 'object' ? v : null
+  } catch {
+    return null
+  }
+}
+
 // `incomingHeadlines` (from the pipeline) seed the studio; if absent we fall
 // back to the preset's placeholder lines so the studio still renders standalone.
 function CreativeStudio({
@@ -107,7 +122,7 @@ function CreativeStudio({
       : preset.headlines
 
   const [palette, setPalette] = useState(preset.palette)
-  const [brand, setBrand] = useState(preset.brand)
+  const [brand, setBrand] = useState(() => loadBrand() || preset.brand)
   const [headlinesText, setHeadlinesText] = useState(seedHeadlines.join('\n'))
   const [enabledIds, setEnabledIds] = useState(initialEnabled)
   const [items, setItems] = useState(() =>
@@ -115,6 +130,15 @@ function CreativeStudio({
   )
   const [exporting, setExporting] = useState(false)
   const [progress, setProgress] = useState({ current: 0, total: 0 })
+
+  // Save brand edits so they survive an unmount (leaving Creatives) + refresh.
+  useEffect(() => {
+    try {
+      localStorage.setItem(BRAND_KEY, JSON.stringify(brand))
+    } catch {
+      /* storage blocked/full — non-fatal */
+    }
+  }, [brand])
 
   const refs = useRef({})
 
