@@ -106,6 +106,16 @@ app.post(
   })
 )
 
+// Perplexity (web-grounded discovery) appends inline citation markers like
+// "[1]" or "[6][7][8]" to the source strings. Strip every bracketed-number
+// marker anywhere in the string, collapse the leftover whitespace, and drop
+// anything that empties out.
+const cleanSource = (s) =>
+  String(s)
+    .replace(/\[\d+\]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
 // Stage 0 — source discovery. The separate "find me the sources" step, so the
 // user can review/edit the sources before the slow, paid deep-research call.
 app.post(
@@ -121,7 +131,9 @@ app.post(
       maxTokens: 2000,
     })
     const parsed = extractJson(text)
-    const sources = Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string') : []
+    const sources = Array.isArray(parsed)
+      ? parsed.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
+      : []
     res.json({ sources })
   })
 )
@@ -146,7 +158,8 @@ app.post(
           maxTokens: 2000,
         })
         const parsed = extractJson(srcText)
-        if (Array.isArray(parsed)) sources = parsed.filter((s) => typeof s === 'string')
+        if (Array.isArray(parsed))
+          sources = parsed.filter((s) => typeof s === 'string').map(cleanSource).filter(Boolean)
       } catch {
         sources = [] // research falls back to self-selecting sources
       }
