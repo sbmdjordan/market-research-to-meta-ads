@@ -1,27 +1,46 @@
 // Source-discovery step — the separate "find me the relevant sources" prompt
 // from the original workflow. Run BEFORE the deep research so the research
 // mines specific, real communities instead of self-selecting shallow ones.
-// Uses the writing model (like the original skill, where the assistant picked
-// sources from its knowledge), so it's a fast, cheap pre-step.
+// Picks a MINIMUM covering set of real, named sources (no fixed count),
+// branches the source palette on B2B vs B2C so a B2B tool doesn't get biased
+// toward consumer channels (Amazon/TikTok) or vice versa, and enforces
+// reality + thin-data discipline so it doesn't invent obscure venues.
+// Runs on Perplexity sonar (web-grounded) so it can confirm sources are real.
 
 export function buildSourcesPrompt({ product, market, context }) {
+  const marketLine =
+    market === 'B2B'
+      ? 'This is a B2B offering.'
+      : market === 'B2C'
+      ? 'This is a B2C offering.'
+      : 'Infer B2B vs B2C from the description.'
+
   return `
-I'm about to run deep customer research for this product, and I need you to find the BEST places to research first.
+You pick the research sources for deep market research. ONE job: source selection. You do not run the research.
 
 Product: ${product}
-${market ? `Market: ${market}` : ''}
-${context ? `Context / constraints: ${context}` : ''}
+${marketLine}${context ? `\nContext / constraints: ${context}` : ''}
 
-List the SPECIFIC, REAL sources where buyers of THIS product (at this price point, in this context) actually talk — not generic categories. Be concrete and named:
-- Named subreddits (e.g. "r/onebag", "r/BuyItForLife")
-- Specific forums / communities / Discords / Facebook groups
-- Named review hubs, blogs, and editorial sites that cover this product
-- Notable YouTube channels / creators who review it
-- Marketplaces with rich reviews — name the kind of listing (e.g. "Amazon reviews of competing >£100 travel backpacks")
-- 2–4 named competitor brands / sites whose own reviews, ads, and comments reveal buyer language
+Pick the MINIMUM set of real, specific places where THIS product's buyers actually congregate. Add a source only when it reaches a buyer population the others miss — never for completeness. A niche B2B tool might be 4 sources; a broad consumer product spanning Amazon + TikTok + Reddit + reviews might be 8. No fixed count. The ceiling is depth-dilution (a deep-research run has a finite budget — spread it thin and you lose the verbatim depth that is the point), not a number.
 
-Favour places with deep, real customer voice for this EXACT product and price tier. Prefer specificity over breadth.
+Match source TYPES to what this is — do NOT default to consumer channels for a B2B tool, or vice versa:
+- B2B software / SaaS / tools / services / marketplaces → Reddit (name the real subs), G2 + Capterra reviews (name the category + real competitor products), LinkedIn & X/Twitter posts from the actual buyer roles, Indie Hackers, Hacker News (Ask HN), Product Hunt launch comments, niche Slack/Discord communities. NOT Amazon consumer reviews, NOT TikTok.
+- Physical consumer products → Amazon reviews, TikTok comments, YouTube review videos, Reddit, Instagram comments.
+- Local services → Google reviews, Yelp, Nextdoor, Facebook groups, local subreddits.
+- Coaching / courses / info products → YouTube comments on related content, Reddit, Skool/Circle, X/Twitter, Facebook groups.
+- Hospitality / travel → TripAdvisor, Booking.com, travel subreddits, Instagram, YouTube vlogs.
 
-Return ONLY a JSON array of short strings, each a single specific named source. 10–18 entries. No prose, no markdown, no code fences.
+Always include, where they exist: 3–9 NAMED real competitors, plus their ads via Google Ads Transparency Center, Meta Ad Library, and LinkedIn ads. Competitor ads and comment sections are where buyer language is richest.
+
+Reality discipline (this is critical — the failure mode is inventing sources):
+- Name only platforms, communities, subreddits, and competitors you are confident are REAL. Use your web search to confirm the competitor set and any specific named venue actually exists and is relevant.
+- Never invent an obscure blog, review page, forum, or Facebook group to sound specific. If you can't confirm a specific named venue, describe the venue TYPE and what to search there instead (e.g. "G2 reviews of the marketing-automation category" rather than a made-up page).
+- Discard any source that merely string-matches a name but is unrelated (a same-named business in another country, an off-topic sub).
+
+Thin-data decomposition (for novel or hyper-local concepts): if the literal product has no real online customer voice — no reviews, no active sub, no busy forum — do NOT point research at it and manufacture junk. Decompose into adjacent PROVEN communities that do have voice, source those, and label each such entry as adjacent so findings get mapped back (e.g. "Adjacent — ...").
+
+Each entry = one concrete source: the platform plus the specific named venues, plus a short clause on WHAT to mine there. Group related venues of the same platform into one entry (e.g. the relevant subreddits together). Be concrete: "r/SaaS, r/startups, r/Entrepreneur — threads on marketing stack setup, first marketing hire, founder-led GTM pain" beats "Reddit".
+
+Return ONLY a JSON array of short strings, one source per entry. No fixed count. No prose, no markdown, no code fences.
 `.trim()
 }
