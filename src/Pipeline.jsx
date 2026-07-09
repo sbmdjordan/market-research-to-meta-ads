@@ -41,19 +41,30 @@ function draftBrief(product, segment) {
 }
 
 export default function Pipeline() {
-  const [step, setStep] = useState(0)
+  // Persist the whole pipeline so a refresh / accidental tab-close doesn't wipe
+  // in-progress work — including the slow, PAID deep-research result. Config
+  // (settings/keys/templates) already persists separately; this covers the run.
+  const STATE_KEY = 'pipeline-state-v1'
+  const saved = (() => {
+    try {
+      return JSON.parse(localStorage.getItem(STATE_KEY)) || {}
+    } catch {
+      return {}
+    }
+  })()
+  const [step, setStep] = useState(saved.step ?? 0)
   // Furthest step whose data actually exists — tabs up to here are clickable.
-  const [maxStep, setMaxStep] = useState(0)
+  const [maxStep, setMaxStep] = useState(saved.maxStep ?? 0)
   const advance = (n) => {
     setStep(n)
     setMaxStep((m) => Math.max(m, n))
   }
-  const [setup, setSetup] = useState({ product: '', market: '', context: '' })
-  const [sources, setSources] = useState([])
-  const [research, setResearch] = useState(null)
-  const [segment, setSegment] = useState(null)
-  const [brief, setBrief] = useState('')
-  const [headlineItems, setHeadlineItems] = useState([])
+  const [setup, setSetup] = useState(saved.setup ?? { product: '', market: '', context: '' })
+  const [sources, setSources] = useState(saved.sources ?? [])
+  const [research, setResearch] = useState(saved.research ?? null)
+  const [segment, setSegment] = useState(saved.segment ?? null)
+  const [brief, setBrief] = useState(saved.brief ?? '')
+  const [headlineItems, setHeadlineItems] = useState(saved.headlineItems ?? [])
 
   const [busy, setBusy] = useState(false)
   const [busyMsg, setBusyMsg] = useState('')
@@ -72,11 +83,34 @@ export default function Pipeline() {
     setIntro(false)
   }
 
+  const startOver = () => {
+    if (!window.confirm('Start over? This clears your current research and headlines.')) return
+    localStorage.removeItem(STATE_KEY)
+    setStep(0)
+    setMaxStep(0)
+    setSetup({ product: '', market: '', context: '' })
+    setSources([])
+    setResearch(null)
+    setSegment(null)
+    setBrief('')
+    setHeadlineItems([])
+    setError('')
+  }
+
   useEffect(() => {
     getStatus()
       .then(setStatus)
       .catch(() => setStatus(null))
   }, [])
+
+  // Save the run bundle on every change. Writes are cheap + localStorage is
+  // synchronous, so no debounce. Transient UI (busy/error/status) is excluded.
+  useEffect(() => {
+    localStorage.setItem(
+      STATE_KEY,
+      JSON.stringify({ step, maxStep, setup, sources, research, segment, brief, headlineItems })
+    )
+  }, [step, maxStep, setup, sources, research, segment, brief, headlineItems])
 
   const onSaveSettings = (s) => {
     setSettings(s)
@@ -225,6 +259,11 @@ export default function Pipeline() {
         </div>
         <div className="header-right">
           <Stepper index={step} maxStep={maxStep} onClick={setStep} />
+          {maxStep > 0 && (
+            <button className="btn-settings" onClick={startOver} title="Clear this run and start fresh">
+              Start over
+            </button>
+          )}
           <button className="btn-settings" onClick={() => setIntro(true)} title="What this tool does">
             How it works
           </button>
