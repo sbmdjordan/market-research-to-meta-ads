@@ -252,7 +252,7 @@ export default function Pipeline() {
         <div className="brand-lockup">
           <LogoMark size={34} />
           <span className="brand-word">
-            Efficiency <span className="works">Works</span>
+            The Marketing <span className="works">Startup</span>
           </span>
           <span className="brand-divider" />
           <span className="brand-product">Ad Studio</span>
