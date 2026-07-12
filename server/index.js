@@ -22,7 +22,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 app.use(express.json({ limit: '2mb' }))
 
-// CORS — let the Efficiency Works site (and local dev) call this API from a
+// CORS — let the The Marketing Startup site (and local dev) call this API from a
 // different origin. Comma-separated allowlist in ALLOWED_ORIGINS.
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
   .split(',')

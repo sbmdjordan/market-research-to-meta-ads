@@ -7,7 +7,7 @@ export default {
   id: 'example',
   name: 'Your Brand',
 
-  // Default palette = Efficiency Works brand (matches the site theme): brand
+  // Default palette = The Marketing Startup brand (matches the site theme): brand
   // green + deep navy on warm cream. Templates read these keys, so this recolors
   // every design. Editable live in the UI.
   palette: {

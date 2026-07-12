@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { FONT_STACK, fitFont, lines } from './shared'
 
 /* ============================================================================
-   20 NEW ad-creative templates for Efficiency Works · Ad Studio.
+   20 NEW ad-creative templates for The Marketing Startup · Ad Studio.
    Same contract as the existing set: forwardRef({ headline, palette, brand }).
    Inline styles only · html2canvas-safe (solid fills, gradients, borders,
    shapes; "offset shadows" are solid divs — never box-shadow/filter/mask).

@@ -1,6 +1,6 @@
 // presetPalettes.js
 // ----------------------------------------------------------------------------
-// Curated, ready-to-use palettes for Efficiency Works · Ad Studio.
+// Curated, ready-to-use palettes for The Marketing Startup · Ad Studio.
 //
 // Every ad template consumes palette *keys* (never raw hex), so swapping the
 // palette object recolors all templates instantly. These presets are starting
@@ -26,7 +26,7 @@ export const PALETTE_KEYS = [
 
 export const PRESET_PALETTES = [
   {
-    key: 'brand', label: 'Brand', // Efficiency Works — green + navy
+    key: 'brand', label: 'Brand', // The Marketing Startup — green + navy
     colors: { navy: '#001026', navyMid: '#06131f', navyLight: '#103154', accent: '#1f9d57', accentDark: '#16713a', white: '#ffffff', offWhite: '#f6f3ea', mint: '#46d98a', mintTint: '#d9f2e3' },
   },
   {

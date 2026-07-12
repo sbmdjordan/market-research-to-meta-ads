@@ -91,7 +91,7 @@ export default function StepSetup({ initial, busy, onRun, onPreview }) {
       </button>
       <p className="cta-note">
         Real deep research across the live web — it usually takes several minutes (often
-        5–10, sometimes longer), and uses paid API credits. Kick it off and let it run.
+        5–10, sometimes longer). Kick it off and let it run.
       </p>
 
       {onPreview && (
