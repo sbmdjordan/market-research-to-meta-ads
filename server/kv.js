@@ -45,7 +45,7 @@ export async function claimFreeRun(email) {
 }
 
 // Look up an active paid subscription for this email. Written by the site's
-// Stripe webhook (pricing-landing-page/api/meta-ads-stripe-webhook.js) into
+// Stripe webhook (the-marketing-startup-site/api/meta-ads-stripe-webhook.js) into
 // the SAME Upstash database (shared via matching UPSTASH_* env vars on both
 // Render and Vercel), so a checkout completed on the site is immediately
 // visible here. Returns null if there's no subscription or it isn't active.
